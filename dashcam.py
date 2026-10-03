@@ -28,26 +28,34 @@ def shutdownHandler(signalNumber, frame):
   print("Received shutdown request, stopping...")
   shutdown.set()
 
-
 #Ensure the storage config exists
-if not config.ensureConfig("storage-config.json", config.defaultStorageConfig):
+storageConfigPath = "storage-config.json"
+if not config.ensureConfig(storageConfigPath, config.defaultStorageConfig):
   exit(1)
 
-#Read the config, using defaults for missing values
-storageConfig = config.readConfig("storage-config.json", config.defaultStorageConfig)
+#Read the storage config, using defaults for missing values
+storageConfig = config.readConfig(storageConfigPath, config.defaultStorageConfig)
 if storageConfig is None:
   exit(1)
 
-bitRate = 1000000 * 8
-width = 1920
-height = 1080
-duration = 5
+#Ensure the recording config exists
+recordingConfigPath = os.path.join(storageConfig.recordingPath, "recording-config.json")
+if not config.ensureConfig(recordingConfigPath, config.defaultRecordingConfig):
+  exit(1)
+
+#Read the recording config, using defaults for missing values
+recordingConfig = config.readConfig(recordingConfigPath, config.defaultRecordingConfig)
+if recordingConfig is None:
+  exit(1)
+
+#Set the recording path from the config
+recordingPath = config.resolvePath(storageConfig.recordingPath)
 
 picam2 = Picamera2()
-config = picam2.create_video_configuration({'size': (width, height), 'format': 'YUV420'})
+config = picam2.create_video_configuration({'size': (recordingConfig.width, recordingConfig.height), 'format': 'YUV420'})
 picam2.configure(config)
 
-encoder = H264Encoder(bitrate=bitRate)
+encoder = H264Encoder(bitrate = recordingConfig.bitRate)
 
 signal.signal(signal.SIGTERM, shutdownHandler)
 signal.signal(signal.SIGINT, shutdownHandler)
@@ -55,17 +63,17 @@ signal.signal(signal.SIGINT, shutdownHandler)
 recording = False
 splitter = None
 while not shutdown.is_set():
-  fileName = pickFileName("./", getTimeString(), "mp4")
+  fileName = pickFileName(recordingPath, getTimeString(), "mp4")
 
   if not recording:
-    splitter = SplittableOutput(output=PyavOutput(fileName))
+    splitter = SplittableOutput(output = PyavOutput(fileName))
     picam2.start_recording(encoder, splitter)
     recording = True
   else:
     splitter.split_output(PyavOutput(fileName))
 
-  print(f"Writing to {fileName} for {duration} seconds")
-  shutdown.wait(duration)
+  print(f"Writing to {fileName} for {recordingConfig.duration} seconds")
+  shutdown.wait(recordingConfig.duration)
 
 picam2.stop_recording()
 print("Done recording")
