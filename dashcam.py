@@ -9,6 +9,8 @@ from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import PyavOutput, SplittableOutput
 
+import config
+
 def pickFileName(path, name, extension):
   index = 0
   newFilePath = os.path.join(path, f"{name}.{extension}")
@@ -25,6 +27,16 @@ shutdown = Event()
 def shutdownHandler(signalNumber, frame):
   print("Received shutdown request, stopping...")
   shutdown.set()
+
+
+#Ensure the storage config exists
+if not config.ensureConfig("storage-config.json", config.defaultStorageConfig):
+  exit(1)
+
+#Read the config, using defaults for missing values
+storageConfig = config.readConfig("storage-config.json", config.defaultStorageConfig)
+if storageConfig is None:
+  exit(1)
 
 bitRate = 1000000 * 8
 width = 1920
