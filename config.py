@@ -13,13 +13,27 @@ class Config:
 class StorageConfig(Config):
   def __init__(self):
     #Default values for storage config
-    self.storagePath = "~/Videos"
+    self.recordingPath = "~/Videos"
+
+class RecordingConfig(Config):
+  def __init__(self):
+    #Default values for recording config
+    self.bitRate = 1000000 * 8
+    self.width = 1920
+    self.height = 1080
+    self.duration = 5 #In seconds
 
 defaultStorageConfig = StorageConfig()
+defaultRecordingConfig = RecordingConfig()
+
+def resolvePath(path):
+  return os.path.abspath(os.path.expanduser(path))
 
 #Save a config file
 #Return True on success
 def writeConfig(configPath, configValues):
+  configPath = resolvePath(configPath)
+
   #Convert the config into JSON
   jsonConfig = json.dumps(configValues.toDict(), indent = 4) + "\n"
 
@@ -38,6 +52,8 @@ def writeConfig(configPath, configValues):
 #Missing keys will have default values filled in, and extra keys will be removed
 #Return None on failure
 def readConfig(configPath, defaultConfig):
+  configPath = resolvePath(configPath)
+
   #Read the config file
   jsonFileContent = None
   try:
@@ -79,6 +95,8 @@ def readConfig(configPath, defaultConfig):
 #Ensure the config file exists, using default values if missing
 #Return True on success
 def ensureConfig(configPath, defaultConfig):
+  configPath = resolvePath(configPath)
+
   #Return early if the path is a file
   if os.path.isfile(configPath):
     return True
