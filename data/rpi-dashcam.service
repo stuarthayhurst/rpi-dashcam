@@ -3,7 +3,7 @@ Description=Raspberry Pi dashcam service
 
 [Service]
 WorkingDirectory=PROGRAM_PATH
-ExecStart=PROGRAM_PATH/dashcam.py
+ExecStart=PROGRAM_PATH/app/dashcam.py
 Restart=always
 
 [Install]
