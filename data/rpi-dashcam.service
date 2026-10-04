@@ -1,0 +1,10 @@
+[Unit]
+Description=Raspberry Pi dashcam service
+
+[Service]
+WorkingDirectory=PROGRAM_PATH
+ExecStart=PROGRAM_PATH/dashcam.py
+Restart=always
+
+[Install]
+WantedBy=default.target
