@@ -13,7 +13,9 @@ class Config:
 class StorageConfig(Config):
   def __init__(self):
     #Default values for storage config
-    self.recordingPath = "~/Videos"
+    self.fixedRecordingPath = "~/Videos"
+    self.storagePartUUID = "" #UUID of a partition to use
+    self.useDedicatedPart = False #Toggle between a fixed path or partition
 
 class RecordingConfig(Config):
   def __init__(self):
