@@ -21,7 +21,7 @@ class RecordingConfig(Config):
     self.bitRate = 1000000 * 8
     self.width = 1920
     self.height = 1080
-    self.duration = 5 #In seconds
+    self.duration = 3600 #In seconds
 
 defaultStorageConfig = StorageConfig()
 defaultRecordingConfig = RecordingConfig()
