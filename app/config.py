@@ -1,4 +1,5 @@
-import os, json
+import os
+import json
 
 class Config:
   def toDict(self):
@@ -16,6 +17,7 @@ class StorageConfig(Config):
     self.fixedRecordingPath = "~/Videos"
     self.storagePartUUID = "" #UUID of a partition to use
     self.useDedicatedPart = False #Toggle between a fixed path or partition
+    self.rotationThresholdBytes = 16 * 1024 * 1024 * 1024 #Clear storage when free space drops below this threshold
 
 class RecordingConfig(Config):
   def __init__(self):

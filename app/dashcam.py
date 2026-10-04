@@ -1,8 +1,6 @@
 #!/usr/bin/python3
-import datetime
 import os
-import subprocess
-import uuid
+import time
 
 from threading import Event
 import signal
@@ -12,18 +10,7 @@ from picamera2.encoders import H264Encoder
 from picamera2.outputs import PyavOutput, SplittableOutput
 
 import config
-
-def pickFileName(path, name, extension):
-  index = 0
-  newFilePath = os.path.join(path, f"{name}.{extension}")
-  while os.path.exists(newFilePath):
-    index += 1
-    newFilePath = os.path.join(path, f"{name}-{index}.{extension}")
-
-  return newFilePath
-
-def getTimeString():
-  return datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+import storageManager
 
 shutdown = Event()
 def shutdownHandler(signalNumber, frame):
@@ -42,37 +29,10 @@ storageConfig = config.readConfig(storageConfigPath, config.defaultStorageConfig
 if storageConfig is None:
   exit(1)
 
-#Prepare the recording location
-recordingPath = ""
-diskPath = ""
-if storageConfig.useDedicatedPart:
-  #Check that the specified partition exists
-  diskPath = f"/dev/disk/by-uuid/{storageConfig.storagePartUUID}"
-  if not os.path.exists(diskPath):
-    print(f"Couldn't find '{diskPath}'")
-    exit(1)
-
-  #Find a mount point for the partition
-  while True:
-    sessionId = uuid.uuid1()
-    recordingPath = f"/tmp/rpi-dashcam-data-{sessionId}"
-    try:
-      os.mkdir(recordingPath)
-      break
-    except FileExistsError:
-      continue
-
-  #Mount the partition
-  print(f"Remounting '{diskPath}' at '{recordingPath}'...")
-  subprocess.run(["umount", "-q", diskPath])
-  mountProcess = subprocess.run(["mount", diskPath, recordingPath])
-  if mountProcess.returncode != 0:
-    print(f"Failed to mount '{diskPath}' to '{recordingPath}'")
-    exit(1)
-else:
-  #Set the recording path from the config
-  recordingPath = config.resolvePath(storageConfig.fixedRecordingPath)
-
+#Prepare a storage location for recordings
+recordingPath = storageManager.chooseRecordingPath(storageConfig)
+if recordingPath is None:
+  exit(1)
 print(f"Using '{recordingPath}' for recording storage")
 
 #Ensure the recording config exists
@@ -98,10 +58,12 @@ signal.signal(signal.SIGINT, shutdownHandler)
 
 #Continuously record into files with a fixed max length
 recording = False
+failed = False
 splitter = None
 while not shutdown.is_set():
-  fileName = pickFileName(recordingPath, getTimeString(), "mp4")
+  fileName = storageManager.pickRecordingFile(recordingPath, "mp4")
 
+  #Start or split the recording
   if not recording:
     splitter = SplittableOutput(output = PyavOutput(fileName))
     picam2.start_recording(encoder, splitter)
@@ -109,22 +71,28 @@ while not shutdown.is_set():
   else:
     splitter.split_output(PyavOutput(fileName))
 
+  recordingStartTime = time.time()
   print(f"Writing to '{fileName}' for {recordingConfig.duration} seconds")
-  shutdown.wait(recordingConfig.duration)
+
+  #Handle storage rotation
+  if not storageManager.rotateStorage(storageConfig, recordingPath):
+    print("Failed to rotate storage, exiting")
+    failed = True
+    break
+
+  #Wait for the rest of the recording time
+  remainingTime = recordingConfig.duration - (time.time() - recordingStartTime)
+  if remainingTime > 0:
+    shutdown.wait(remainingTime)
 
 print("Stopping dashcam...")
 
 picam2.stop_recording()
 print("Finished recording")
 
-#Clean up after dedicated partition, if used
-if storageConfig.useDedicatedPart:
-  #Unmount the partition
-  print(f"Unmounting '{diskPath}'...")
-  unmountProcess = subprocess.run(["umount", "-q", diskPath])
-  if unmountProcess.returncode != 0:
-    print(f"Failed to unmount '{diskPath}'")
-    exit(1)
+#Clean up after the storage location
+if not storageManager.closeRecordingPath(storageConfig, recordingPath):
+  exit(1)
 
-  #Delete the mount point
-  os.rmdir(recordingPath)
+if failed:
+  exit(1)
