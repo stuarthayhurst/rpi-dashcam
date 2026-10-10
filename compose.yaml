@@ -1,0 +1,7 @@
+services:
+  dashcam:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - /run/udev:/run/udev:ro
+    privileged: true
