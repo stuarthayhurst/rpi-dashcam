@@ -19,18 +19,18 @@ def shutdownHandler(signalNumber, frame):
 
 print("Starting dashcam...")
 
-#Ensure the storage config exists
-storageConfigPath = "storage-config.json"
-if not config.ensureConfig(storageConfigPath, config.defaultStorageConfig):
+#Ensure the general config exists
+generalConfigPath = "general-config.json"
+if not config.ensureConfig(generalConfigPath, config.defaultGeneralConfig):
   exit(1)
 
-#Read the storage config, using defaults for missing values
-storageConfig = config.readConfig(storageConfigPath, config.defaultStorageConfig)
-if storageConfig is None:
+#Read the general config, using defaults for missing values
+generalConfig = config.readConfig(generalConfigPath, config.defaultGeneralConfig)
+if generalConfig is None:
   exit(1)
 
 #Prepare a storage location for recordings
-recordingPath = storageManager.chooseRecordingPath(storageConfig)
+recordingPath = storageManager.chooseRecordingPath(generalConfig)
 if recordingPath is None:
   exit(1)
 print(f"Using '{recordingPath}' for recording storage")
@@ -75,7 +75,7 @@ while not shutdown.is_set():
   print(f"Writing to '{fileName}' for {recordingConfig.duration} seconds")
 
   #Handle storage rotation
-  if not storageManager.rotateStorage(storageConfig, recordingPath):
+  if not storageManager.rotateStorage(generalConfig, recordingPath):
     print("Failed to rotate storage, exiting")
     failed = True
     break
@@ -91,7 +91,7 @@ picam2.stop_recording()
 print("Finished recording")
 
 #Clean up after the storage location
-if not storageManager.closeRecordingPath(storageConfig, recordingPath):
+if not storageManager.closeRecordingPath(generalConfig, recordingPath):
   exit(1)
 
 if failed:

@@ -11,9 +11,9 @@ class Config:
 
     return self
 
-class StorageConfig(Config):
+class GeneralConfig(Config):
   def __init__(self):
-    #Default values for storage config
+    #Default values for general config
     self.fixedRecordingPath = "~/Videos"
     self.storagePartUUID = "" #UUID of a partition to use
     self.useDedicatedPart = False #Toggle between a fixed path or partition
@@ -27,7 +27,7 @@ class RecordingConfig(Config):
     self.height = 1080
     self.duration = 3600 #In seconds
 
-defaultStorageConfig = StorageConfig()
+defaultGeneralConfig = GeneralConfig()
 defaultRecordingConfig = RecordingConfig()
 
 def resolvePath(path):
