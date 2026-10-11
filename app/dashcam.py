@@ -94,11 +94,12 @@ while not shutdown.is_set():
 print("Stopping dashcam...")
 
 picam2.stop_recording()
-activityLight.off()
 print("Finished recording")
 
 #Clean up after the storage location
-if not storageManager.closeRecordingPath(generalConfig, recordingPath):
+cleanExit = storageManager.closeRecordingPath(generalConfig, recordingPath)
+activityLight.off()
+if not cleanExit:
   exit(1)
 
 if failed:
