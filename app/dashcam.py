@@ -5,6 +5,8 @@ import time
 from threading import Event
 import signal
 
+from gpiozero import LED
+
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import PyavOutput, SplittableOutput
@@ -56,6 +58,9 @@ encoder = H264Encoder(bitrate = recordingConfig.bitRate)
 signal.signal(signal.SIGTERM, shutdownHandler)
 signal.signal(signal.SIGINT, shutdownHandler)
 
+#Set up GPIO for activity light
+activityLight = LED(generalConfig.activityLightPin)
+
 #Continuously record into files with a fixed max length
 recording = False
 failed = False
@@ -68,6 +73,7 @@ while not shutdown.is_set():
     splitter = SplittableOutput(output = PyavOutput(fileName))
     picam2.start_recording(encoder, splitter)
     recording = True
+    activityLight.on()
   else:
     splitter.split_output(PyavOutput(fileName))
 
@@ -88,6 +94,7 @@ while not shutdown.is_set():
 print("Stopping dashcam...")
 
 picam2.stop_recording()
+activityLight.off()
 print("Finished recording")
 
 #Clean up after the storage location

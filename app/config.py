@@ -19,6 +19,8 @@ class GeneralConfig(Config):
     self.useDedicatedPart = False #Toggle between a fixed path or partition
     self.rotationThresholdBytes = 16 * 1024 * 1024 * 1024 #Clear storage when free space drops below this threshold
 
+    self.activityLightPin = 18
+
 class RecordingConfig(Config):
   def __init__(self):
     #Default values for recording config
